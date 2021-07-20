@@ -41,16 +41,17 @@ mongoose
  
 // CUSTOM ERROR HANDELING 
 app.use((err, req, res, next) => {
-  if (err) { 
+  if (err) {
     if (err instanceof multer.MulterError) {
-      res.send("there are upload error");
+      res.status(500).send("There was an upload error!");
     } else {
-      res.send(err.message);
+      res.status(500).send(err.message);
     }
-  } else { 
+  } else {
     res.send("success");
   }
 });
+
 
 const errorHandelar = (err, req, res, next) => {
   if (res.headerSent) {

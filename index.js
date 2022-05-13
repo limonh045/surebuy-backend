@@ -60,7 +60,7 @@ const errorHandelar = (err, req, res, next) => {
   res.status(500).json({ error: err });
 };
 app.use(errorHandelar);
-
+ 
 // LISTENNIG PORT
 
 app.listen(process.env.PORT || 5000, () => {

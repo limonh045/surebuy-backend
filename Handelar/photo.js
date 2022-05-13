@@ -1,9 +1,20 @@
 const express = require("express");
 var multer = require("multer");
 const router = express.Router();
+const {Storage} = require("@google-cloud/storage");
 
 const UPLOADS_FOLDER = "./uploads/";
 
+const storages = new Storage({
+  apiKey: "AIzaSyCvdfiYfXqVUwDl7ZAO4EBQFTvr_08C3lw",
+  projectId: "shop-11ca7",
+});
+
+// const storages = googleStorage({
+  
+// });
+
+const bucket = storages.bucket("shop-11ca7.appspot.com");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -61,17 +72,61 @@ var upload = multer({
 //   },
 // });
 
-router.post("/photo", upload.single("file"), (req, res) => {
-  console.log('work');
-  const url = req.protocol + "://" + req.get("host");
-  const reqFiles = url + "/uploads/" + req.file.filename;
-  try {
-    res.send(reqFiles);
-  } catch (error) {
-    console.log(error);
-  }
-});
+const uploadImageToStorage = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject("No image file");
+    }
+    let newFileName = `${file.originalname}_${Date.now()}`;
 
+    let fileUpload = bucket.file(newFileName);
+
+    const blobStream = fileUpload.createWriteStream({
+      metadata: {
+        contentType: file.mimetype,
+      },
+    });
+
+    blobStream.on("error", (error) => {
+      reject(error);
+    });
+
+    blobStream.on("finish", () => {
+      // The public URL can be used to directly access the file via HTTP.
+      const url = format(
+        `https://storage.googleapis.com/${bucket.name}/${fileUpload.name}`
+      );
+      resolve(url);
+    });
+
+    blobStream.end(file.buffer);
+  });
+};
+
+router.post("/photo", upload.single("file"), (req, res) => {
+  console.log(req.file);
+
+  let file = req.file;
+  if (file) {
+    uploadImageToStorage(file)
+      .then((success) => {
+        res.status(200).send({
+          status: "success",
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+
+  // const url = req.protocol + "://" + req.get("host");
+  // const reqFiles = url + "/uploads/" + req.file.filename;
+  // try {
+  //   res.send(reqFiles);
+  // } catch (error) {
+  //   console.log(error);
+  // }
+});
 
 // for multiple
 router.post("/photos", upload.array("file", 2), (req, res) => {
